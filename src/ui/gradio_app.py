@@ -1,9 +1,14 @@
 """Gradio web interface for Interior Design Diffusion."""
 
 import logging
+import tempfile
+import uuid
 import gradio as gr
 from pathlib import Path
-from typing import List, Tuple
+from typing import Dict, Any
+
+import numpy as np
+from PIL import Image
 
 from src.services import GenerationService
 from src.utils.io import load_config
@@ -23,6 +28,59 @@ def create_interface(config_path: str = "configs/default.yaml") -> gr.Blocks:
     """
     config = load_config(config_path)
     service = GenerationService(config)
+    temp_dir = Path(tempfile.gettempdir()) / "image_editor_gradio"
+    temp_dir.mkdir(parents=True, exist_ok=True)
+
+    def _extract_background_and_mask(editor_data: Any) -> tuple[Image.Image, Image.Image]:
+        """Extract base image and binary mask from Gradio ImageEditor payload."""
+        if editor_data is None:
+            raise ValueError("Please upload an image and paint the mask area first.")
+
+        if isinstance(editor_data, Image.Image):
+            # Fallback mode: no drawing data available.
+            base = editor_data.convert("RGB")
+            empty_mask = Image.new("L", base.size, 0)
+            return base, empty_mask
+
+        if not isinstance(editor_data, dict):
+            raise ValueError("Unsupported editor input format.")
+
+        background = editor_data.get("background")
+        composite = editor_data.get("composite")
+        layers = editor_data.get("layers") or []
+
+        if background is None and composite is None:
+            raise ValueError("Please upload an image before inpainting.")
+
+        if background is None:
+            background = composite
+        if composite is None:
+            composite = background
+
+        background = background.convert("RGB")
+        composite = composite.convert("RGB")
+
+        # Primary mask extraction from layer alpha channels when available.
+        layer_mask = np.zeros((background.height, background.width), dtype=np.uint8)
+        for layer in layers:
+            if layer is None:
+                continue
+            layer_arr = np.array(layer.convert("RGBA"))
+            if layer_arr.shape[:2] != layer_mask.shape:
+                continue
+            alpha = layer_arr[..., 3]
+            layer_mask = np.maximum(layer_mask, alpha)
+
+        # Fallback mask extraction from visual differences between composite and background.
+        bg_arr = np.array(background, dtype=np.int16)
+        comp_arr = np.array(composite, dtype=np.int16)
+        diff = np.abs(comp_arr - bg_arr).sum(axis=2)
+        diff_mask = (diff > 12).astype(np.uint8) * 255
+
+        merged = np.maximum(layer_mask, diff_mask).astype(np.uint8)
+        binary_mask = Image.fromarray(merged, mode="L").point(lambda p: 255 if p > 10 else 0)
+
+        return background, binary_mask
 
     def generate_text2img(
         prompt: str,
@@ -48,6 +106,44 @@ def create_interface(config_path: str = "configs/default.yaml") -> gr.Blocks:
         except Exception as e:
             logger.error(f"Generation failed: {e}")
             return None, f"Error: {str(e)}"
+
+    def generate_inpaint(
+        editor_data: Dict[str, Any],
+        prompt: str,
+        negative_prompt: str,
+        num_images: int,
+        guidance_scale: float,
+        inference_steps: int,
+        seed: int,
+    ):
+        """Generate inpainted images from hand-drawn mask."""
+        try:
+            base_image, mask_image = _extract_background_and_mask(editor_data)
+
+            # Ensure mask contains editable region.
+            if np.array(mask_image).max() == 0:
+                return None, mask_image, "Error: No painted mask detected. Draw over area to edit."
+
+            run_id = uuid.uuid4().hex[:8]
+            input_path = temp_dir / f"inpaint_input_{run_id}.png"
+            mask_path = temp_dir / f"inpaint_mask_{run_id}.png"
+            base_image.save(input_path)
+            mask_image.save(mask_path)
+
+            images = service.generate_inpaint(
+                image_path=str(input_path),
+                mask_path=str(mask_path),
+                prompt=prompt,
+                negative_prompt=negative_prompt if negative_prompt else None,
+                num_images_per_prompt=num_images,
+                guidance_scale=guidance_scale,
+                num_inference_steps=inference_steps,
+                seed=seed if seed and seed >= 0 else None,
+            )
+            return images, mask_image, "Inpainting successful!"
+        except Exception as e:
+            logger.error(f"Inpainting failed: {e}")
+            return None, None, f"Error: {str(e)}"
 
     # Create interface with tabs
     with gr.Blocks(title="Interior Design Diffusion") as demo:
@@ -139,7 +235,82 @@ def create_interface(config_path: str = "configs/default.yaml") -> gr.Blocks:
                 gr.Markdown("Image-to-Image redesign coming soon...")
 
             with gr.Tab("Inpainting"):
-                gr.Markdown("Inpainting feature coming soon...")
+                gr.Markdown(
+                    "Upload an image, paint over the area to edit, then generate inpainted results."
+                )
+                with gr.Row():
+                    with gr.Column():
+                        inpaint_editor = gr.ImageEditor(
+                            label="Image + Hand-Drawn Mask",
+                            type="pil",
+                            image_mode="RGB",
+                            brush=gr.Brush(colors=["#ffffff"], default_color="#ffffff", default_size=24),
+                            eraser=gr.Eraser(default_size=20),
+                            height=512,
+                        )
+                        inpaint_prompt = gr.Textbox(
+                            label="Prompt",
+                            placeholder="Describe how the masked area should be modified...",
+                            lines=3,
+                        )
+                        inpaint_negative = gr.Textbox(
+                            label="Negative Prompt",
+                            placeholder="Things to avoid...",
+                            lines=2,
+                        )
+                        with gr.Row():
+                            inpaint_guidance = gr.Slider(
+                                label="Guidance Scale",
+                                minimum=1.0,
+                                maximum=20.0,
+                                value=7.5,
+                                step=0.1,
+                            )
+                            inpaint_steps = gr.Slider(
+                                label="Inference Steps",
+                                minimum=10,
+                                maximum=100,
+                                value=50,
+                                step=5,
+                            )
+                        with gr.Row():
+                            inpaint_num_images = gr.Slider(
+                                label="Number of Images",
+                                minimum=1,
+                                maximum=4,
+                                value=1,
+                                step=1,
+                            )
+                            inpaint_seed = gr.Number(
+                                label="Seed (-1 for random)",
+                                value=-1,
+                                precision=0,
+                            )
+
+                        inpaint_button = gr.Button("Inpaint", size="lg")
+
+                    with gr.Column():
+                        inpaint_output = gr.Gallery(label="Inpainted Images", columns=2)
+                        inpaint_mask_preview = gr.Image(
+                            label="Detected Binary Mask (white = edited)",
+                            type="pil",
+                            image_mode="L",
+                        )
+                        inpaint_status = gr.Textbox(label="Status", interactive=False)
+
+                inpaint_button.click(
+                    generate_inpaint,
+                    inputs=[
+                        inpaint_editor,
+                        inpaint_prompt,
+                        inpaint_negative,
+                        inpaint_num_images,
+                        inpaint_guidance,
+                        inpaint_steps,
+                        inpaint_seed,
+                    ],
+                    outputs=[inpaint_output, inpaint_mask_preview, inpaint_status],
+                )
 
             with gr.Tab("ControlNet"):
                 gr.Markdown("ControlNet feature coming soon...")
