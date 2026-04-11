@@ -5,7 +5,7 @@ import tempfile
 import uuid
 import gradio as gr
 from pathlib import Path
-from typing import Dict, Any
+from typing import Dict, Any, List
 
 import numpy as np
 from PIL import Image
@@ -30,6 +30,8 @@ def create_interface(config_path: str = "configs/default.yaml") -> gr.Blocks:
     service = GenerationService(config)
     temp_dir = Path(tempfile.gettempdir()) / "image_editor_gradio"
     temp_dir.mkdir(parents=True, exist_ok=True)
+    inpaint_output_root = Path(config.get("inpaint_output_dir", "outputs/inpaint"))
+    inpaint_output_root.mkdir(parents=True, exist_ok=True)
 
     def _extract_background_and_mask(editor_data: Any) -> tuple[Image.Image, Image.Image]:
         """Extract base image and binary mask from Gradio ImageEditor payload."""
@@ -122,13 +124,25 @@ def create_interface(config_path: str = "configs/default.yaml") -> gr.Blocks:
 
             # Ensure mask contains editable region.
             if np.array(mask_image).max() == 0:
-                return None, mask_image, "Error: No painted mask detected. Draw over area to edit."
+                return (
+                    None,
+                    mask_image,
+                    "Error: No painted mask detected. Draw over area to edit.",
+                    [],
+                )
 
             run_id = uuid.uuid4().hex[:8]
             input_path = temp_dir / f"inpaint_input_{run_id}.png"
             mask_path = temp_dir / f"inpaint_mask_{run_id}.png"
             base_image.save(input_path)
             mask_image.save(mask_path)
+
+            run_output_dir = inpaint_output_root / f"run_{run_id}"
+            run_output_dir.mkdir(parents=True, exist_ok=True)
+            run_input_path = run_output_dir / "input.png"
+            run_mask_path = run_output_dir / "mask.png"
+            base_image.save(run_input_path)
+            mask_image.save(run_mask_path)
 
             images = service.generate_inpaint(
                 image_path=str(input_path),
@@ -140,10 +154,18 @@ def create_interface(config_path: str = "configs/default.yaml") -> gr.Blocks:
                 num_inference_steps=inference_steps,
                 seed=seed if seed and seed >= 0 else None,
             )
-            return images, mask_image, "Inpainting successful!"
+
+            download_paths: List[str] = [str(run_input_path), str(run_mask_path)]
+            for i, image in enumerate(images, start=1):
+                out_path = run_output_dir / f"output_{i:02d}.png"
+                image.save(out_path)
+                download_paths.append(str(out_path))
+
+            status = f"Inpainting successful! Saved artifacts to {run_output_dir}"
+            return images, mask_image, status, download_paths
         except Exception as e:
             logger.error(f"Inpainting failed: {e}")
-            return None, None, f"Error: {str(e)}"
+            return None, None, f"Error: {str(e)}", []
 
     # Create interface with tabs
     with gr.Blocks(title="Interior Design Diffusion") as demo:
@@ -296,6 +318,10 @@ def create_interface(config_path: str = "configs/default.yaml") -> gr.Blocks:
                             type="pil",
                             image_mode="L",
                         )
+                        inpaint_downloads = gr.File(
+                            label="Download Artifacts (input, mask, outputs)",
+                            file_count="multiple",
+                        )
                         inpaint_status = gr.Textbox(label="Status", interactive=False)
 
                 inpaint_button.click(
@@ -309,7 +335,12 @@ def create_interface(config_path: str = "configs/default.yaml") -> gr.Blocks:
                         inpaint_steps,
                         inpaint_seed,
                     ],
-                    outputs=[inpaint_output, inpaint_mask_preview, inpaint_status],
+                    outputs=[
+                        inpaint_output,
+                        inpaint_mask_preview,
+                        inpaint_status,
+                        inpaint_downloads,
+                    ],
                 )
 
             with gr.Tab("ControlNet"):
