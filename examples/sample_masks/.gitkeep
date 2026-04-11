@@ -1,0 +1,56 @@
+# Sample Masks
+
+This directory contains example mask images for testing the inpainting pipeline.
+
+## Mask Format
+
+Masks should be grayscale images where:
+- **White (255)** = area to inpaint (replace)
+- **Black (0)** = area to preserve (keep original)
+
+## Creating Masks
+
+1. Start with an interior image
+2. Create a corresponding grayscale image
+3. Paint white on areas you want to inpaint
+4. Save as PNG with same dimensions as source image
+
+## Tools
+
+Popular tools for creating masks:
+- GIMP (free)
+- Photoshop
+- Online tools like remove.bg
+- Python PIL/OpenCV
+
+## Example with Python
+
+```python
+from PIL import Image
+import numpy as np
+
+# Load original image
+img = Image.open("room.jpg")
+width, height = img.size
+
+# Create mask (black background)
+mask = Image.new("L", (width, height), 0)
+# Convert to numpy for easier manipulation
+mask_array = np.array(mask)
+
+# Paint white on area to inpaint (e.g., furniture region)
+mask_array[100:300, 150:400] = 255
+
+# Save mask
+mask = Image.fromarray(mask_array)
+mask.save("mask.jpg")
+```
+
+## Usage
+
+```bash
+python scripts/run_inpaint.py \
+  --image examples/sample_inputs/room.jpg \
+  --mask examples/sample_masks/mask.jpg \
+  --prompt "Modern furniture design"
+```

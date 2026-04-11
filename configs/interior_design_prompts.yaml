@@ -1,0 +1,360 @@
+# Interior Design Prompts - Structured Templates for SDXL Dual Prompting
+
+## Design Principles
+
+All templates follow SDXL dual prompting structure:
+- **prompt**: Room type, layout, focal objects, spatial composition
+- **prompt_2**: Style, materials, lighting, color palette, realism
+
+---
+
+## Living Rooms
+
+### Modern Minimalist
+
+**prompt:**
+modern living room, open layout, floor-to-ceiling windows, minimalist furniture, low-profile sofa, geometric coffee table
+
+**prompt_2:**
+contemporary minimalist style, light oak and white, natural daylight, neutral beige palette, interior photography, ultra realistic
+
+---
+
+### Luxury Contemporary
+
+**prompt:**
+upscale living room, spacious open floor plan, statement lighting fixture, plush sectional sofa, glass coffee table
+
+**prompt_2:**
+luxury contemporary aesthetic, marble accents, warm ambient lighting, jewel tone palette, professional interior photography, ultra realistic
+
+---
+
+### Scandinavian Cozy
+
+**prompt:**
+Scandinavian living room, cozy intimate layout, fireplace, natural wood furniture, area rug, warm seating
+
+**prompt_2:**
+Scandinavian minimalist style, light pine wood, soft natural daylight, warm neutral tones, interior photography, ultra realistic
+
+---
+
+### Industrial Modern
+
+**prompt:**
+industrial living room, open concept, exposed ceiling, metal shelving, concrete accent wall, leather seating
+
+**prompt_2:**
+industrial modern style, raw concrete and steel, warm accent lighting, monochrome gray palette, interior photography, ultra realistic
+
+---
+
+### Bohemian Eclectic
+
+**prompt:**
+bohemian living room, layered textiles, eclectic furniture collection, hanging plants, oversized windows, mixed patterns
+
+**prompt_2:**
+bohemian, world traveler aesthetic, warm colors and natural materials, mixed warm and natural lighting, rich color palette, interior photography, ultra realistic
+
+---
+
+## Bedrooms
+
+### Modern Master Suite
+
+**prompt:**
+modern master bedroom, spacious layout, large bed with upholstered headboard, nightstands, floor lamps, accent wall
+
+**prompt_2:**
+contemporary luxury style, soft velvet and wood textures, warm ambient lighting, neutral color scheme, interior photography, ultra realistic
+
+---
+
+### Minimalist Serene
+
+**prompt:**
+minimalist bedroom, calm serene space, platform bed, minimal decor, large window, wooden flooring
+
+**prompt_2:**
+zen minimalist style, light wood and soft fabrics, natural daylight, cool neutral palette, interior photography, ultra realistic
+
+---
+
+### Luxury Glam
+
+**prompt:**
+glamorous bedroom, jewel tones, crystal chandelier, velvet upholstered bed, gold fixtures, decorative mirrors
+
+**prompt_2:**
+luxury glam style, velvet and marble, dramatic accent lighting, emerald and gold palette, high-end interior photography, ultra realistic
+
+---
+
+### Cozy Farmhouse
+
+**prompt:**
+farmhouse bedroom, rustic charming, wooden bed frame, farmhouse linens, vintage nightstands, warm ambiance
+
+**prompt_2:**
+farmhouse rustic style, distressed wood and linen, warm soft lighting, cream and wood tones, interior photography, ultra realistic
+
+---
+
+## Kitchens
+
+### Contemporary Clean
+
+**prompt:**
+modern kitchen, open layout, white cabinetry, stainless steel appliances, quartz countertops, island seating, pendant lighting
+
+**prompt_2:**
+contemporary minimalist kitchen, white and steel, bright task lighting, neutral cool palette, interior photography, ultra realistic
+
+---
+
+### Warm Traditional
+
+**prompt:**
+warm traditional kitchen, cabinetry with details, warm countertops, wood flooring, stove focal point, casual dining
+
+**prompt_2:**
+traditional classic style, warm wood cabinetry and granite, warm task lighting, warm amber and wood tones, interior photography, ultra realistic
+
+---
+
+### Luxury Modern
+
+**prompt:**
+luxury modern kitchen, matte black cabinetry, brass hardware, waterfall island, open shelving, dramatic lighting
+
+**prompt_2:**
+luxury contemporary style, black cabinetry and brass accents, professional lighting, monochrome with brass palette, high-end interior photography, ultra realistic
+
+---
+
+### Farmhouse Rustic
+
+**prompt:**
+farmhouse kitchen, open shelving, farmhouse sink, butcher block counters, warm wood tones, vintage details
+
+**prompt_2:**
+farmhouse rustic style, natural wood and vintage accents, warm ambient and task lighting, cream and warm wood palette, interior photography, ultra realistic
+
+---
+
+## Bathrooms
+
+### Spa Luxury
+
+**prompt:**
+spa-like luxury bathroom, freestanding soaking tub, marble walls and flooring, ambient lighting, double vanity, large mirror
+
+**prompt_2:**
+luxury spa aesthetic, marble and brass, warm spa lighting, cool white and marble palette, high-end interior photography, ultra realistic
+
+---
+
+### Modern Minimalist
+
+**prompt:**
+modern minimal bathroom, clean lines, floating vanity, open shower, neutral colors, natural window, minimalist decor
+
+**prompt_2:**
+contemporary minimalist style, white tile and wood accents, natural daylight, cool neutral palette, interior photography, ultra realistic
+
+---
+
+### Industrial Chic
+
+**prompt:**
+industrial bathroom, concrete walls, exposed piping, metal fixtures, matte finishes, utilitarian elegance
+
+**prompt_2:**
+industrial modern style, concrete and steel, warm accent lighting, gray monochrome palette, interior photography, ultra realistic
+
+---
+
+## Home Offices
+
+### Professional Modern
+
+**prompt:**
+professional home office, large desk, floating shelves, ergonomic chair, organized workspace, natural light
+
+**prompt_2:**
+contemporary professional style, wood and white, bright natural daylight, cool neutral palette, interior photography, ultra realistic
+
+---
+
+### Luxury Executive
+
+**prompt:**
+executive home office, mahogany desk, leather chair, dark wood cabinetry, bookshelf wall, ambient lighting
+
+**prompt_2:**
+luxury executive style, rich dark woods and leather, warm ambient lighting, warm earth tone palette, interior photography, ultra realistic
+
+---
+
+### Creative Studio
+
+**prompt:**
+bright creative studio, inspiration wall, standing workspace, artistic storage, large window, mood lighting
+
+**prompt_2:**
+creative modern style, mix of natural wood and displays, warm creative lighting, warm and cool mix palette, interior photography, ultra realistic
+
+---
+
+## Dining Rooms
+
+### Elegant Formal
+
+**prompt:**
+elegant formal dining room, long dining table, upholstered chairs, chandelier, artwork, formal place settings
+
+**prompt_2:**
+elegant formal style, polished wood and upholstery, dramatic chandelier lighting, warm jewel-toned palette, interior photography, ultra realistic
+
+---
+
+### Modern Casual
+
+**prompt:**
+modern casual dining, wooden table, mix of seating, pendant lights, artwork, relaxed composition
+
+**prompt_2:**
+contemporary casual style, warm wood and light accents, warm ambient lighting, warm neutral palette, interior photography, ultra realistic
+
+---
+
+## Entryways
+
+### Grand Modern
+
+**prompt:**
+grand modern entryway, statement lighting, console table, large mirror, warm welcome, architectural detail
+
+**prompt_2:**
+contemporary luxurious, marble or light wood, dramatic accent lighting, cool neutral palette, interior photography, ultra realistic
+
+---
+
+### Scandinavian Simple
+
+**prompt:**
+Scandinavian entryway, light wood bench, minimalist hooks, small mirror, plants, airy feeling
+
+**prompt_2:**
+Scandinavian minimalist, light wood and white, natural daylight, cool neutral palette, interior photography, ultra realistic
+
+---
+
+## General Prompt Components
+
+### Room Types
+- living room
+- bedroom
+- kitchen
+- bathroom
+- home office / study
+- dining room
+- entryway
+- master suite
+- guest bedroom
+- den
+
+### Layouts
+- open layout
+- spacious and bright
+- cozy and intimate
+- minimalist
+- compartmented spaces
+- multi-zone layout
+- flow into other rooms
+
+### Focal Objects
+- sofa / sectional
+- bed
+- desk
+- dining table
+- kitchen island
+- fireplace
+- statement lighting
+- artwork
+- large window
+- bookshelf wall
+
+### Styles
+- modern contemporary
+- Scandinavian minimalist
+- industrial modern
+- luxury contemporary
+- luxury glam
+- bohemian eclectic
+- traditional classic
+- farmhouse rustic
+- japandi (Japanese Scandinavian)
+- mid-century modern
+- coastal maritime
+- eclectic sophisticated
+
+### Materials
+- light oak wood
+- dark walnut wood
+- marble and stone
+- concrete and steel
+- velvet and silk
+- linen and cotton
+- leather upholstery
+- brass and gold fixtures
+- stainless steel
+- glass and metal
+- natural wood
+- matte finishes
+
+### Lighting
+- warm natural daylight
+- soft ambient lighting
+- warm color temperature
+- cool modern lighting
+- dramatic accent lighting
+- moody atmospheric lighting
+- bright task lighting
+- mixed natural and accent
+- warm fireplace glow
+- spa mood lighting
+
+### Color Palettes
+- neutral beige tones
+- warm earth tones
+- cool gray palette
+- jewel tones and rich colors
+- monochrome and grayscale
+- soft pastel tones
+- bold saturated colors
+- muted desaturated palette
+- cream and wood tones
+- warm and cool mix
+
+### Photography Language
+- interior photography
+- professional interior design photography
+- architectural photography
+- high-end lifestyle photography
+- moody artistic photography
+- bright and airy photography
+- luxury real estate photography
+
+### Realism Tags
+- ultra realistic
+- photorealistic
+- photo quality
+- 8k quality
+- high detail
+- highly detailed
+- intricate details
+- perfect lighting
+- perfectly composed

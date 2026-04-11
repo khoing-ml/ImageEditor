@@ -1,0 +1,36 @@
+# Prompt templates configuration with negative prompt presets
+
+templates:
+  modern_living:
+    "A modern {style} living room with {furniture}, {lighting}, natural materials, and {decor}"
+  
+  luxury_bedroom:
+    "A luxurious {style} bedroom with high-end {furniture}, designer {lighting}, soft {textures}, and {color_scheme} color scheme"
+  
+  professional_office:
+    "A professional {style} office with ergonomic {furniture}, task {lighting}, organized {storage}, and {atmosphere} atmosphere"
+  
+  minimalist_kitchen:
+    "A minimalist {style} kitchen with clean lines, {cabinets}, {countertops}, {appliances}, and {organization}"
+  
+  spa_bathroom:
+    "A spa-like {style} bathroom with {fixtures}, {materials}, {lighting}, and {ambiance} ambiance"
+
+negative_templates:
+  quality_assurance: "blurry, low quality, pixelated, distorted, noisy, JPEG artifacts"
+  
+  artifact_prevention: "watermark, text logo, signature, border artifacts, frame, ui elements"
+  
+  style_consistency: "cartoon, painted, sketch, drawn, illustrated, anime, vector art"
+  
+  anatomy_quality: "deformed, malformed, asymmetrical, broken limbs, bad proportions, extra limbs"
+  
+  professional_standard: "amateurish, unprofessional, poorly lit, overexposed, underexposed, harsh shadows"
+  
+  furniture_quality: "broken furniture, damaged, worn out, torn, ripped, messy, cluttered, disorganized"
+  
+  lighting_quality: "dark, dim, no lighting, flat lighting, overlit, blown highlights"
+  
+  interior_design: "bad interior, ugly decor, cheap looking, tacky, outdated design, clashing colors"
+  
+  comprehensive: "blurry, low quality, watermark, text, distorted, bad anatomy, deformed, cartoon, unprofessional, Dark, poorly lit, broken, cheap, tacky"

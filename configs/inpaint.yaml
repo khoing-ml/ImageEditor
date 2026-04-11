@@ -1,0 +1,11 @@
+# Inpainting Configuration
+
+guidance_scale: 7.5
+inference_steps: 50
+num_images: 1
+
+# Model preference
+model_id: runwayml/stable-diffusion-inpainting
+
+# Optimization options
+enable_attention_slicing: true

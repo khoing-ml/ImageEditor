@@ -1,0 +1,40 @@
+# Default Configuration
+
+device: cuda
+
+# Model IDs - now using SDXL as default
+text2img_model_id: stabilityai/stable-diffusion-xl-base-1.0
+img2img_model_id: stabilityai/stable-diffusion-xl-img2img-1.0
+inpaint_model_id: stabilityai/stable-diffusion-xl-1.0
+controlnet_depth_model_id: stabilityai/stable-diffusion-xl-base-1.0
+controlnet_model_id: lllyasviel/control_v11f1p_sd15_depth
+
+# IP Adapter configuration
+ip_adapter_type: plus
+ip_adapter_model_id: h94/IP-Adapter
+
+# Output directories
+output_dir: outputs
+text2img_output_dir: outputs/text2img
+img2img_output_dir: outputs/img2img
+inpaint_output_dir: outputs/inpaint
+controlnet_output_dir: outputs/controlnet
+log_dir: logs
+
+# Default generation parameters
+default_guidance_scale: 7.5
+default_inference_steps: 50
+default_num_images: 1
+default_height: 1024
+default_width: 1024
+
+# ControlNet parameters
+controlnet_conditioning_scale: 1.0
+controlnet_depth_conditioning_scale: 1.0
+
+# IP Adapter parameters
+ip_adapter_weight: 0.8
+ip_adapter_scale: 1.0
+
+# Logging
+log_level: INFO

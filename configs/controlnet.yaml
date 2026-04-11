@@ -1,0 +1,16 @@
+# ControlNet Configuration
+
+guidance_scale: 7.5
+controlnet_conditioning_scale: 1.0
+inference_steps: 50
+num_images: 1
+
+# Base model
+base_model_id: runwayml/stable-diffusion-v1-5
+
+# Control modes
+control_type: canny
+controlnet_model_id: lllyasviel/control_canny-fp16
+
+# Optimization options
+enable_attention_slicing: true

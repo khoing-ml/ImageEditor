@@ -1,0 +1,31 @@
+# Sample Inputs
+
+This directory contains example images for testing image-to-image and inpainting pipelines.
+
+## Structure
+
+- `room_*.jpg` - Sample room images for img2img testing
+- `../sample_masks/mask_*.jpg` - Corresponding masks for inpainting
+
+## Usage
+
+Run image-to-image redesign:
+```bash
+python scripts/run_img2img.py --image examples/sample_inputs/room_01.jpg --prompt "Modern minimalist design"
+```
+
+Run inpainting:
+```bash
+python scripts/run_inpaint.py --image examples/sample_inputs/room_01.jpg --mask examples/sample_masks/mask_01.jpg --prompt "Replace with wooden furniture"
+```
+
+## Creating Sample Images
+
+1. Take or find an interior design photo
+2. Ensure dimensions are reasonable (512-1024px)
+3. Convert to RGB (if needed): `convert image.png -colorspace RGB image.jpg`
+4. Place in this directory
+
+## Note
+
+Sample images should be representative of typical interior design photos for best results.

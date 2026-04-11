@@ -1,0 +1,12 @@
+# Image-to-Image Configuration
+
+guidance_scale: 7.5
+inference_steps: 50
+num_images: 1
+strength: 0.75
+
+# Model preference
+model_id: runwayml/stable-diffusion-v1-5
+
+# Optimization options
+enable_attention_slicing: true
