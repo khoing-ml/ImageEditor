@@ -4,11 +4,17 @@ import logging
 import tempfile
 import uuid
 import gradio as gr
+import sys
 from pathlib import Path
 from typing import Dict, Any, List
 
 import numpy as np
 from PIL import Image
+
+# Ensure project root is importable when running this file directly.
+PROJECT_ROOT = Path(__file__).resolve().parents[2]
+if str(PROJECT_ROOT) not in sys.path:
+    sys.path.insert(0, str(PROJECT_ROOT))
 
 from src.services import GenerationService
 from src.utils.io import load_config
