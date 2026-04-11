@@ -42,6 +42,41 @@ def main():
         "--output-dir", type=str, default="outputs/inpaint", help="Output directory"
     )
     parser.add_argument(
+        "--no-prepare-mask",
+        action="store_true",
+        help="Skip mask cleanup/dilation/feathering before inpainting",
+    )
+    parser.add_argument(
+        "--mask-threshold", type=int, default=127, help="Mask binarization threshold (0-255)"
+    )
+    parser.add_argument(
+        "--mask-opening-kernel", type=int, default=0, help="Opening kernel size"
+    )
+    parser.add_argument(
+        "--mask-closing-kernel", type=int, default=3, help="Closing kernel size"
+    )
+    parser.add_argument(
+        "--mask-min-component-area",
+        type=int,
+        default=64,
+        help="Remove connected mask regions smaller than this area",
+    )
+    parser.add_argument(
+        "--mask-dilate-kernel", type=int, default=5, help="Dilation kernel size"
+    )
+    parser.add_argument(
+        "--mask-erode-kernel", type=int, default=0, help="Erosion kernel size"
+    )
+    parser.add_argument(
+        "--mask-feather-radius", type=int, default=7, help="Gaussian feather radius"
+    )
+    parser.add_argument(
+        "--prepared-mask-output",
+        type=str,
+        default=None,
+        help="Optional path to save prepared mask preview",
+    )
+    parser.add_argument(
         "--config", type=str, default="configs/default.yaml", help="Config file path"
     )
 
@@ -71,6 +106,17 @@ def main():
             mask_path=args.mask,
             prompt=args.prompt,
             negative_prompt=args.negative_prompt,
+            prepare_mask=not args.no_prepare_mask,
+            mask_options={
+                "threshold": args.mask_threshold,
+                "opening_kernel": args.mask_opening_kernel,
+                "closing_kernel": args.mask_closing_kernel,
+                "min_component_area": args.mask_min_component_area,
+                "dilate_kernel": args.mask_dilate_kernel,
+                "erode_kernel": args.mask_erode_kernel,
+                "feather_radius": args.mask_feather_radius,
+            },
+            prepared_mask_output_path=args.prepared_mask_output,
             num_images_per_prompt=args.num_images,
             guidance_scale=args.guidance_scale,
             num_inference_steps=args.inference_steps,

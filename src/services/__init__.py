@@ -2,6 +2,7 @@
 
 from src.services.generation_service import GenerationService
 from src.services.image_loader import ImageLoader
+from src.services.mask_processor import MaskProcessor
 from src.services.prompt_builder import (
     PromptBuilder,
     PromptPair,
@@ -18,6 +19,7 @@ from src.services.metadata_logger import MetadataLogger
 __all__ = [
     "GenerationService",
     "ImageLoader",
+    "MaskProcessor",
     "PromptBuilder",
     "PromptPair",
     "IPAdapterConfig",

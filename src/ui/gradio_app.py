@@ -123,16 +123,33 @@ def create_interface(config_path: str = "configs/default.yaml") -> gr.Blocks:
         guidance_scale: float,
         inference_steps: int,
         seed: int,
+        mask_extract_threshold: int,
+        invert_mask: bool,
+        prepare_mask: bool,
+        opening_kernel: int,
+        closing_kernel: int,
+        fill_holes: bool,
+        min_component_area: int,
+        dilate_kernel: int,
+        erode_kernel: int,
+        feather_radius: int,
     ):
         """Generate inpainted images from hand-drawn mask."""
         try:
             base_image, mask_image = _extract_background_and_mask(editor_data)
+
+            mask_arr = np.array(mask_image, dtype=np.uint8)
+            mask_arr = np.where(mask_arr > mask_extract_threshold, 255, 0).astype(np.uint8)
+            if invert_mask:
+                mask_arr = 255 - mask_arr
+            mask_image = Image.fromarray(mask_arr, mode="L")
 
             # Ensure mask contains editable region.
             if np.array(mask_image).max() == 0:
                 return (
                     None,
                     mask_image,
+                    None,
                     "Error: No painted mask detected. Draw over area to edit.",
                     [],
                 )
@@ -146,7 +163,8 @@ def create_interface(config_path: str = "configs/default.yaml") -> gr.Blocks:
             run_output_dir = inpaint_output_root / f"run_{run_id}"
             run_output_dir.mkdir(parents=True, exist_ok=True)
             run_input_path = run_output_dir / "input.png"
-            run_mask_path = run_output_dir / "mask.png"
+            run_mask_path = run_output_dir / "mask_raw.png"
+            run_prepared_mask_path = run_output_dir / "mask_prepared.png"
             base_image.save(run_input_path)
             mask_image.save(run_mask_path)
 
@@ -155,23 +173,52 @@ def create_interface(config_path: str = "configs/default.yaml") -> gr.Blocks:
                 mask_path=str(mask_path),
                 prompt=prompt,
                 negative_prompt=negative_prompt if negative_prompt else None,
+                prepare_mask=prepare_mask,
+                mask_options={
+                    "opening_kernel": opening_kernel,
+                    "closing_kernel": closing_kernel,
+                    "fill_holes": fill_holes,
+                    "min_component_area": min_component_area,
+                    "dilate_kernel": dilate_kernel,
+                    "erode_kernel": erode_kernel,
+                    "feather_radius": feather_radius,
+                },
+                prepared_mask_output_path=str(run_prepared_mask_path),
                 num_images_per_prompt=num_images,
                 guidance_scale=guidance_scale,
                 num_inference_steps=inference_steps,
                 seed=seed if seed and seed >= 0 else None,
             )
 
+            prepared_mask_preview = mask_image
+            if prepare_mask and run_prepared_mask_path.exists():
+                prepared_mask_preview = Image.open(run_prepared_mask_path).convert("L")
+
             download_paths: List[str] = [str(run_input_path), str(run_mask_path)]
+            if run_prepared_mask_path.exists():
+                download_paths.append(str(run_prepared_mask_path))
             for i, image in enumerate(images, start=1):
                 out_path = run_output_dir / f"output_{i:02d}.png"
                 image.save(out_path)
                 download_paths.append(str(out_path))
 
             status = f"Inpainting successful! Saved artifacts to {run_output_dir}"
-            return images, mask_image, status, download_paths
+            return images, mask_image, prepared_mask_preview, status, download_paths
         except Exception as e:
             logger.error(f"Inpainting failed: {e}")
-            return None, None, f"Error: {str(e)}", []
+            return None, None, None, f"Error: {str(e)}", []
+
+    def update_inpaint_tool_sizes(brush_size: int, eraser_size: int, canvas_height: int):
+        """Update brush, eraser, and canvas size for the inpainting editor."""
+        return gr.update(
+            brush=gr.Brush(
+                colors=["#ffffff"],
+                default_color="#ffffff",
+                default_size=int(brush_size),
+            ),
+            eraser=gr.Eraser(default_size=int(eraser_size)),
+            height=int(canvas_height),
+        )
 
     # Create interface with tabs
     with gr.Blocks(title="Interior Design Diffusion") as demo:
@@ -315,17 +362,111 @@ def create_interface(config_path: str = "configs/default.yaml") -> gr.Blocks:
                                 precision=0,
                             )
 
+                        with gr.Accordion("Mask Tool Settings", open=False):
+                            with gr.Row():
+                                inpaint_brush_size = gr.Slider(
+                                    label="Brush Size",
+                                    minimum=1,
+                                    maximum=128,
+                                    value=24,
+                                    step=1,
+                                )
+                                inpaint_eraser_size = gr.Slider(
+                                    label="Eraser Size",
+                                    minimum=1,
+                                    maximum=128,
+                                    value=20,
+                                    step=1,
+                                )
+                            inpaint_canvas_height = gr.Slider(
+                                label="Canvas Height",
+                                minimum=256,
+                                maximum=1024,
+                                value=512,
+                                step=32,
+                            )
+                            inpaint_apply_tool_sizes = gr.Button("Apply Tool Sizes")
+
+                            inpaint_mask_extract_threshold = gr.Slider(
+                                label="Mask Extract Threshold",
+                                minimum=0,
+                                maximum=255,
+                                value=10,
+                                step=1,
+                            )
+                            inpaint_invert_mask = gr.Checkbox(
+                                label="Invert Mask (edit unpainted area)",
+                                value=False,
+                            )
+                            inpaint_prepare_mask = gr.Checkbox(
+                                label="Enable Mask Cleanup + Feathering",
+                                value=True,
+                            )
+                            with gr.Row():
+                                inpaint_opening_kernel = gr.Slider(
+                                    label="Opening Kernel",
+                                    minimum=0,
+                                    maximum=31,
+                                    value=0,
+                                    step=1,
+                                )
+                                inpaint_closing_kernel = gr.Slider(
+                                    label="Closing Kernel",
+                                    minimum=0,
+                                    maximum=31,
+                                    value=3,
+                                    step=1,
+                                )
+                            inpaint_fill_holes = gr.Checkbox(
+                                label="Fill Holes",
+                                value=True,
+                            )
+                            inpaint_min_component_area = gr.Slider(
+                                label="Min Component Area",
+                                minimum=0,
+                                maximum=5000,
+                                value=64,
+                                step=1,
+                            )
+                            with gr.Row():
+                                inpaint_dilate_kernel = gr.Slider(
+                                    label="Dilation Kernel",
+                                    minimum=0,
+                                    maximum=31,
+                                    value=5,
+                                    step=1,
+                                )
+                                inpaint_erode_kernel = gr.Slider(
+                                    label="Erosion Kernel",
+                                    minimum=0,
+                                    maximum=31,
+                                    value=0,
+                                    step=1,
+                                )
+                            inpaint_feather_radius = gr.Slider(
+                                label="Feather Radius",
+                                minimum=0,
+                                maximum=25,
+                                value=7,
+                                step=1,
+                            )
+
                         inpaint_button = gr.Button("Inpaint", size="lg")
 
                     with gr.Column():
                         inpaint_output = gr.Gallery(label="Inpainted Images", columns=2)
-                        inpaint_mask_preview = gr.Image(
-                            label="Detected Binary Mask (white = edited)",
+                        inpaint_mask_preview_raw = gr.Image(
+                            label="Raw Mask (white = edited)",
+                            type="pil",
+                            image_mode="L",
+                        )
+                        inpaint_mask_preview_prepared = gr.Image(
+                            label="Prepared Mask Used for Inpainting",
                             type="pil",
                             image_mode="L",
                         )
                         inpaint_downloads = gr.File(
-                            label="Download Artifacts (input, mask, outputs)",
+                            label="Download Artifacts (input, raw mask, prepared mask, outputs)",
                             file_count="multiple",
                         )
                         inpaint_status = gr.Textbox(label="Status", interactive=False)
@@ -340,13 +481,30 @@ def create_interface(config_path: str = "configs/default.yaml") -> gr.Blocks:
                         inpaint_guidance,
                         inpaint_steps,
                         inpaint_seed,
+                        inpaint_mask_extract_threshold,
+                        inpaint_invert_mask,
+                        inpaint_prepare_mask,
+                        inpaint_opening_kernel,
+                        inpaint_closing_kernel,
+                        inpaint_fill_holes,
+                        inpaint_min_component_area,
+                        inpaint_dilate_kernel,
+                        inpaint_erode_kernel,
+                        inpaint_feather_radius,
                     ],
                     outputs=[
                         inpaint_output,
-                        inpaint_mask_preview,
+                        inpaint_mask_preview_raw,
+                        inpaint_mask_preview_prepared,
                         inpaint_status,
                         inpaint_downloads,
                     ],
+                )
+
+                inpaint_apply_tool_sizes.click(
+                    update_inpaint_tool_sizes,
+                    inputs=[inpaint_brush_size, inpaint_eraser_size, inpaint_canvas_height],
+                    outputs=[inpaint_editor],
                 )
 
             with gr.Tab("ControlNet"):

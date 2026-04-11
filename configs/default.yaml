@@ -28,6 +28,18 @@ default_num_images: 1
 default_height: 1024
 default_width: 1024
 
+# Mask preparation defaults for inpainting
+mask_preparation:
+	enabled: true
+	threshold: 127
+	opening_kernel: 0
+	closing_kernel: 3
+	fill_holes: true
+	min_component_area: 64
+	dilate_kernel: 5
+	erode_kernel: 0
+	feather_radius: 7
+
 # ControlNet parameters
 controlnet_conditioning_scale: 1.0
 controlnet_depth_conditioning_scale: 1.0

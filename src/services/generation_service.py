@@ -12,6 +12,7 @@ from src.pipelines import (
     ControlNetPipeline,
 )
 from src.services.image_loader import ImageLoader
+from src.services.mask_processor import MaskProcessor
 from src.services.prompt_builder import PromptBuilder
 from src.services.metadata_logger import MetadataLogger
 
@@ -32,6 +33,7 @@ class GenerationService:
         self.device = config.get("device", "cuda")
         self.pipelines = {}
         self.image_loader = ImageLoader()
+        self.mask_processor = MaskProcessor(config.get("mask_preparation", {}))
         self.prompt_builder = PromptBuilder(config)
         self.metadata_logger = MetadataLogger(config)
 
@@ -124,6 +126,21 @@ class GenerationService:
         logger.info(f"Starting inpainting from {image_path} with mask {mask_path}")
         image = self.image_loader.load(image_path)
         mask = self.image_loader.load(mask_path, mode="L")  # Load as grayscale
+
+        prepare_mask = kwargs.pop("prepare_mask", self.mask_processor.config.get("enabled", True))
+        mask_options = kwargs.pop("mask_options", None)
+        prepared_mask_output_path = kwargs.pop("prepared_mask_output_path", None)
+
+        self.mask_processor.validate_dimensions(image, mask)
+        if prepare_mask:
+            mask = self.mask_processor.prepare_for_inpainting(
+                mask,
+                image_size=image.size,
+                options=mask_options,
+            )
+            if prepared_mask_output_path:
+                self.image_loader.save_image(mask, prepared_mask_output_path)
+
         pipeline = self.get_inpaint_pipeline()
         images = pipeline.generate(
             image=image,
