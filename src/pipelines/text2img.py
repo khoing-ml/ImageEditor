@@ -13,12 +13,21 @@ logger = logging.getLogger(__name__)
 class Text2ImgPipeline(BasePipeline):
     """Text-to-Image generation pipeline using Stable Diffusion."""
 
+    def _is_sdxl_model(self) -> bool:
+        """Detect whether the configured model id is an SDXL checkpoint."""
+        model = self.model_id.lower()
+        return (
+            "sdxl" in model
+            or "stable-diffusion-xl" in model
+            or "sd-xl" in model
+        )
+
     def load_model(self) -> None:
         """Load the text-to-image model."""
         logger.info(f"Loading Text2Img model: {self.model_id}")
-        
-        # Use SDXL pipeline if model is SDXL
-        if "sdxl" in self.model_id.lower():
+
+        # Use SDXL pipeline when the checkpoint is SDXL.
+        if self._is_sdxl_model():
             try:
                 from diffusers import StableDiffusionXLPipeline
                 self.pipeline = StableDiffusionXLPipeline.from_pretrained(
@@ -26,9 +35,9 @@ class Text2ImgPipeline(BasePipeline):
                 )
                 logger.info("Using SDXL pipeline")
             except ImportError:
-                logger.warning("SDXL not available, falling back to SD1.5")
-                self.pipeline = StableDiffusionPipeline.from_pretrained(
-                    self.model_id, torch_dtype="auto"
+                raise RuntimeError(
+                    "SDXL model detected but StableDiffusionXLPipeline is unavailable in "
+                    "the installed diffusers version. Please upgrade diffusers."
                 )
         else:
             self.pipeline = StableDiffusionPipeline.from_pretrained(
