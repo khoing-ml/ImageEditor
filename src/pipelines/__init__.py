@@ -5,6 +5,7 @@ from src.pipelines.text2img import Text2ImgPipeline
 from src.pipelines.img2img import Img2ImgPipeline
 from src.pipelines.inpaint import InpaintPipeline
 from src.pipelines.controlnet import ControlNetPipeline
+from src.pipelines.sam import SAMPipeline
 
 __all__ = [
     "BasePipeline",
@@ -12,4 +13,5 @@ __all__ = [
     "Img2ImgPipeline",
     "InpaintPipeline",
     "ControlNetPipeline",
+    "SAMPipeline",
 ]

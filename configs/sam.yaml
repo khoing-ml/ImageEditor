@@ -1,0 +1,39 @@
+# SAM (Segment Anything Model) Configuration
+
+# Model type: vit_h (best quality, slowest), vit_l, vit_b (recommended), mobile_sam (fastest)
+model_type: vit_b
+
+# Device configuration
+device: cuda  # Options: cuda, cpu
+
+# Segmentation modes
+# Point-based segmentation
+segmentation:
+  mode: points  # Options: points, box, all
+  # For point mode
+  positive_points: true  # Treat points as foreground if true
+
+# Output settings
+output:
+  format: png  # Image format for masks
+  dpi: 100
+  quality: 95
+
+# Post-processing options for generated masks
+mask_post_processing:
+  threshold: 127  # Binary threshold for mask
+  fill_holes: true
+  feather_radius: 0  # Smooth mask edges
+  dilate_kernel: 0
+  erode_kernel: 0
+
+# Device optimization
+optimization:
+  enable_memory_efficient: true
+  enable_attention_slicing: false
+
+# Logging
+logging:
+  level: INFO
+  save_masks: true
+  save_path: outputs/sam_masks/

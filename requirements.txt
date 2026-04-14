@@ -9,3 +9,9 @@ pyyaml>=6.0
 numpy>=1.24.0
 opencv-python>=4.7.0
 python-dotenv>=1.0.0
+
+# For SAM integration, install separately:
+# pip install git+https://github.com/facebookresearch/segment-anything.git
+# or: pip install segment-anything
+# SAM provides powerful segmentation capabilities for mask generation
+huggingface-hub>=0.16.0  # For downloading SAM models

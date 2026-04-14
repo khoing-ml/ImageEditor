@@ -34,7 +34,7 @@ def main():
     parser.add_argument(
         "--pipeline",
         type=str,
-        choices=["text2img", "img2img", "inpaint", "controlnet"],
+        choices=["text2img", "img2img", "inpaint", "controlnet", "sam"],
         default="text2img",
         help="Pipeline type to execute",
     )

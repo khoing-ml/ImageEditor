@@ -15,6 +15,7 @@ from src.services.prompt_weighting import (
     InteriorDesignPromptBuilder,
 )
 from src.services.metadata_logger import MetadataLogger
+from src.services.sam_segmentation import SAMSegmentation
 
 __all__ = [
     "GenerationService",
@@ -28,4 +29,5 @@ __all__ = [
     "DualPromptBuilder",
     "InteriorDesignPromptBuilder",
     "MetadataLogger",
+    "SAMSegmentation",
 ]

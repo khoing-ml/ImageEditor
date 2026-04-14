@@ -10,11 +10,13 @@ from src.pipelines import (
     Img2ImgPipeline,
     InpaintPipeline,
     ControlNetPipeline,
+    SAMPipeline,
 )
 from src.services.image_loader import ImageLoader
 from src.services.mask_processor import MaskProcessor
 from src.services.prompt_builder import PromptBuilder
 from src.services.metadata_logger import MetadataLogger
+from src.services.sam_segmentation import SAMSegmentation
 
 logger = logging.getLogger(__name__)
 
@@ -171,4 +173,118 @@ class GenerationService:
             **kwargs,
         )
         logger.info(f"Generated {len(images)} ControlNet images")
+        return images
+
+    def get_sam_pipeline(self, model_type: str = "vit_b") -> SAMPipeline:
+        """Get or create SAM segmentation pipeline."""
+        pipeline_key = f"sam_{model_type}"
+        if pipeline_key not in self.pipelines:
+            self.pipelines[pipeline_key] = SAMPipeline(model_type=model_type, device=self.device)
+            self.pipelines[pipeline_key].load_model()
+        return self.pipelines[pipeline_key]
+
+    def generate_mask_with_sam(
+        self,
+        image_path: str,
+        mode: str = "points",
+        model_type: str = "vit_b",
+        **kwargs,
+    ) -> Image.Image:
+        """
+        Generate mask using SAM.
+
+        Args:
+            image_path: Path to input image
+            mode: Segmentation mode ("points", "box", "all")
+            model_type: SAM model type ("vit_h", "vit_l", "vit_b", "mobile_sam")
+            **kwargs: Additional parameters based on mode
+                - For "points": points (list of tuples), positive_points (bool)
+                - For "box": box (tuple of x_min, y_min, x_max, y_max)
+                - For "all": no additional parameters needed
+
+        Returns:
+            PIL Image mask
+        """
+        logger.info(f"Starting SAM mask generation from {image_path} with mode {mode}")
+        image = self.image_loader.load(image_path)
+        pipeline = self.get_sam_pipeline(model_type)
+        
+        mask = pipeline.generate(
+            image=image,
+            mode=mode,
+            **kwargs,
+        )
+        
+        logger.info(f"SAM mask generated successfully")
+        return mask
+
+    def generate_inpaint_with_sam(
+        self,
+        image_path: str,
+        sam_model_type: str = "vit_b",
+        sam_mode: str = "points",
+        prompt: str = "",
+        negative_prompt: Optional[str] = None,
+        prepare_mask: bool = True,
+        mask_options: Optional[Dict[str, Any]] = None,
+        prepared_mask_output_path: Optional[str] = None,
+        **kwargs,
+    ) -> List[Image.Image]:
+        """
+        Generate mask with SAM and inpaint the region.
+
+        Args:
+            image_path: Path to input image
+            sam_model_type: SAM model type
+            sam_mode: SAM segmentation mode
+            prompt: Inpainting prompt
+            negative_prompt: Things to avoid
+            prepare_mask: Whether to post-process the mask
+            mask_options: Mask processing options
+            prepared_mask_output_path: Path to save processed mask
+            **kwargs: Additional SAM parameters (points, box, etc.) and inpaint parameters
+
+        Returns:
+            List of inpainted PIL Images
+        """
+        logger.info(f"Starting SAM-assisted inpainting from {image_path}")
+        
+        # Separate SAM and inpaint parameters
+        sam_params = {}
+        inpaint_params = kwargs.copy()
+        
+        for key in ["points", "positive_points", "box"]:
+            if key in inpaint_params:
+                sam_params[key] = inpaint_params.pop(key)
+        
+        # Generate mask with SAM
+        mask = self.generate_mask_with_sam(
+            image_path=image_path,
+            mode=sam_mode,
+            model_type=sam_model_type,
+            **sam_params,
+        )
+        
+        # Prepare mask if requested
+        image = self.image_loader.load(image_path)
+        if prepare_mask:
+            mask = self.mask_processor.prepare_for_inpainting(
+                mask,
+                image_size=image.size,
+                options=mask_options,
+            )
+            if prepared_mask_output_path:
+                self.image_loader.save_image(mask, prepared_mask_output_path)
+        
+        # Perform inpainting
+        pipeline = self.get_inpaint_pipeline()
+        images = pipeline.generate(
+            image=image,
+            mask_image=mask,
+            prompt=prompt,
+            negative_prompt=negative_prompt,
+            **inpaint_params,
+        )
+        
+        logger.info(f"Generated {len(images)} inpainted images with SAM mask")
         return images
