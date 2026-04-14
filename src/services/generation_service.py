@@ -38,12 +38,36 @@ class GenerationService:
         self.prompt_builder = PromptBuilder(config)
         self.metadata_logger = MetadataLogger(config)
 
+    def _apply_pipeline_optimizations(self, pipeline: Any) -> None:
+        """Apply optional memory/performance optimizations to a loaded pipeline."""
+        if self.config.get("enable_attention_slicing", False):
+            try:
+                pipeline.enable_attention_slicing()
+                logger.info("Enabled attention slicing")
+            except Exception as exc:
+                logger.warning("Could not enable attention slicing: %s", exc)
+
+        if self.config.get("enable_model_cpu_offload", False):
+            try:
+                pipeline.enable_model_cpu_offload()
+                logger.info("Enabled model CPU offload")
+            except Exception as exc:
+                logger.warning("Could not enable model CPU offload: %s", exc)
+
+        if self.config.get("enable_sequential_cpu_offload", False):
+            try:
+                pipeline.enable_sequential_cpu_offload()
+                logger.info("Enabled sequential CPU offload")
+            except Exception as exc:
+                logger.warning("Could not enable sequential CPU offload: %s", exc)
+
     def get_text2img_pipeline(self) -> Text2ImgPipeline:
         """Get or create text-to-image pipeline."""
         if "text2img" not in self.pipelines:
             model_id = self.config.get("text2img_model_id", "runwayml/stable-diffusion-v1-5")
             self.pipelines["text2img"] = Text2ImgPipeline(model_id, self.device)
             self.pipelines["text2img"].load_model()
+            self._apply_pipeline_optimizations(self.pipelines["text2img"])
         return self.pipelines["text2img"]
 
     def get_img2img_pipeline(self) -> Img2ImgPipeline:
@@ -52,6 +76,7 @@ class GenerationService:
             model_id = self.config.get("img2img_model_id", "runwayml/stable-diffusion-v1-5")
             self.pipelines["img2img"] = Img2ImgPipeline(model_id, self.device)
             self.pipelines["img2img"].load_model()
+            self._apply_pipeline_optimizations(self.pipelines["img2img"])
         return self.pipelines["img2img"]
 
     def get_inpaint_pipeline(self) -> InpaintPipeline:
@@ -62,6 +87,7 @@ class GenerationService:
             )
             self.pipelines["inpaint"] = InpaintPipeline(model_id, self.device)
             self.pipelines["inpaint"].load_model()
+            self._apply_pipeline_optimizations(self.pipelines["inpaint"])
         return self.pipelines["inpaint"]
 
     def get_controlnet_pipeline(self, control_type: str = "canny") -> ControlNetPipeline:
@@ -76,6 +102,7 @@ class GenerationService:
                 base_model, controlnet_model, control_type, self.device
             )
             self.pipelines[pipeline_key].load_model()
+            self._apply_pipeline_optimizations(self.pipelines[pipeline_key])
         return self.pipelines[pipeline_key]
 
     def generate_text2img(

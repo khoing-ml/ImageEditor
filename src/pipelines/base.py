@@ -49,6 +49,16 @@ class BasePipeline(ABC):
         if self.pipeline:
             self.pipeline.enable_attention_slicing()
 
+    def enable_model_cpu_offload(self) -> None:
+        """Enable model CPU offload when supported by the pipeline."""
+        if self.pipeline and hasattr(self.pipeline, "enable_model_cpu_offload"):
+            self.pipeline.enable_model_cpu_offload()
+
+    def enable_sequential_cpu_offload(self) -> None:
+        """Enable sequential CPU offload when supported by the pipeline."""
+        if self.pipeline and hasattr(self.pipeline, "enable_sequential_cpu_offload"):
+            self.pipeline.enable_sequential_cpu_offload()
+
     def disable_attention_slicing(self) -> None:
         """Disable attention slicing for faster generation."""
         if self.pipeline:

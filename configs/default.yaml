@@ -50,3 +50,7 @@ ip_adapter_scale: 1.0
 
 # Logging
 log_level: INFO
+
+# Optimization options
+enable_model_cpu_offload: true
+enable_sequential_cpu_offload: false
