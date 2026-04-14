@@ -7,6 +7,7 @@ import gradio as gr
 import sys
 from pathlib import Path
 from typing import Dict, Any, List
+from dotenv import load_dotenv
 
 import numpy as np
 from PIL import Image
@@ -20,6 +21,8 @@ from src.services import GenerationService
 from src.utils.io import load_config
 
 logger = logging.getLogger(__name__)
+
+load_dotenv()
 
 
 def create_interface(config_path: str = "configs/default.yaml") -> gr.Blocks:

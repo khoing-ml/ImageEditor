@@ -1,5 +1,6 @@
 """Inpainting pipeline implementation."""
 
+import inspect
 import logging
 from typing import List, Optional
 from PIL import Image
@@ -15,14 +16,34 @@ class InpaintPipeline(BasePipeline):
     """Inpainting pipeline for masked region replacement."""
 
     @staticmethod
-    def _resolve_torch_dtype(device: str) -> torch.dtype:
+    def _is_flux_model(model_id: str) -> bool:
+        """Return True when model identifier looks like a FLUX fill model."""
+        model_id_lower = model_id.lower()
+        return "flux" in model_id_lower and "fill" in model_id_lower
+
+    @staticmethod
+    def _resolve_torch_dtype(device: str, model_id: str) -> torch.dtype:
         """Choose a sensible dtype for the selected device."""
-        return torch.float16 if device.startswith("cuda") else torch.float32
+        if not device.startswith("cuda"):
+            return torch.float32
+
+        # FLUX models generally run best in bfloat16 on modern GPUs.
+        if InpaintPipeline._is_flux_model(model_id) and torch.cuda.is_bf16_supported():
+            return torch.bfloat16
+
+        return torch.float16
+
+    @staticmethod
+    def _filter_supported_kwargs(callable_obj, kwargs):
+        """Filter kwargs against callable signature for cross-pipeline compatibility."""
+        signature = inspect.signature(callable_obj)
+        accepted = set(signature.parameters.keys())
+        return {k: v for k, v in kwargs.items() if k in accepted and v is not None}
 
     def load_model(self) -> None:
         """Load the inpainting model."""
         logger.info(f"Loading Inpaint model: {self.model_id}")
-        torch_dtype = self._resolve_torch_dtype(self.device)
+        torch_dtype = self._resolve_torch_dtype(self.device, self.model_id)
         try:
             # AutoPipeline supports SD 1.x/2.x and SDXL inpainting repositories.
             self.pipeline = AutoPipelineForInpainting.from_pretrained(
@@ -35,7 +56,8 @@ class InpaintPipeline(BasePipeline):
             raise RuntimeError(
                 f"Failed to load inpaint model '{self.model_id}'. "
                 "If using SDXL, set inpaint_model_id to "
-                "'diffusers/stable-diffusion-xl-1.0-inpainting-0.1' or use "
+                "'diffusers/stable-diffusion-xl-1.0-inpainting-0.1'; for FLUX use "
+                "'black-forest-labs/FLUX.1-Fill-dev'; or use "
                 "'runwayml/stable-diffusion-inpainting'."
             ) from exc
 
@@ -76,16 +98,20 @@ class InpaintPipeline(BasePipeline):
         if seed is not None:
             generator = torch.Generator(device=self.device).manual_seed(seed)
 
-        result = self.pipeline(
-            prompt=prompt,
-            image=image,
-            mask_image=mask_image,
-            negative_prompt=negative_prompt,
-            num_inference_steps=num_inference_steps,
-            guidance_scale=guidance_scale,
-            num_images_per_prompt=num_images_per_prompt,
-            generator=generator,
-        )
+        call_kwargs = {
+            "prompt": prompt,
+            "image": image,
+            "mask_image": mask_image,
+            "negative_prompt": negative_prompt,
+            "num_inference_steps": num_inference_steps,
+            "guidance_scale": guidance_scale,
+            "num_images_per_prompt": num_images_per_prompt,
+            "generator": generator,
+        }
+
+        # Different inpainting families accept slightly different call args.
+        safe_kwargs = self._filter_supported_kwargs(self.pipeline.__call__, call_kwargs)
+        result = self.pipeline(**safe_kwargs)
 
         logger.info("Inpainting completed")
         return result.images

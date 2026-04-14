@@ -4,6 +4,7 @@ import argparse
 import logging
 import sys
 from pathlib import Path
+from dotenv import load_dotenv
 
 # Ensure project root is importable when script is run directly.
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
@@ -17,6 +18,8 @@ from src.utils.seed import set_seed
 
 def main():
     """Inpaint a masked region in an image."""
+    load_dotenv()
+
     parser = argparse.ArgumentParser(
         description="Inpaint a masked region in an image"
     )
@@ -79,6 +82,12 @@ def main():
     parser.add_argument(
         "--config", type=str, default="configs/inpaint.yaml", help="Config file path"
     )
+    parser.add_argument(
+        "--model-id",
+        type=str,
+        default=None,
+        help="Override inpainting model id (e.g. black-forest-labs/FLUX.1-Fill-dev)",
+    )
 
     args = parser.parse_args()
 
@@ -88,6 +97,9 @@ def main():
     try:
         # Load configuration
         config = load_config(args.config)
+        if args.model_id:
+            config["inpaint_model_id"] = args.model_id
+            config["model_id"] = args.model_id
 
         # Set seed if provided
         if args.seed is not None:

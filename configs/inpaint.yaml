@@ -5,7 +5,7 @@ inference_steps: 50
 num_images: 1
 
 # Model preference
-model_id: runwayml/stable-diffusion-inpainting
+model_id: black-forest-labs/FLUX.1-Fill-dev
 
 # Optimization options
 enable_attention_slicing: true
