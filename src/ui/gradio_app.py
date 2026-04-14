@@ -67,8 +67,11 @@ def create_interface(config_path: str = "configs/default.yaml") -> gr.Blocks:
 
         background = background.convert("RGB")
         composite = composite.convert("RGB")
+        bg_arr = np.array(background, dtype=np.int16)
 
-        # Primary mask extraction from layer alpha channels when available.
+        # Primary mask extraction from drawing layers. Some Gradio versions emit
+        # layers with opaque alpha across the canvas, so combine alpha with RGB
+        # differences to isolate actual painted regions.
         layer_mask = np.zeros((background.height, background.width), dtype=np.uint8)
         for layer in layers:
             if layer is None:
@@ -76,16 +79,26 @@ def create_interface(config_path: str = "configs/default.yaml") -> gr.Blocks:
             layer_arr = np.array(layer.convert("RGBA"))
             if layer_arr.shape[:2] != layer_mask.shape:
                 continue
-            alpha = layer_arr[..., 3]
-            layer_mask = np.maximum(layer_mask, alpha)
+            alpha = layer_arr[..., 3].astype(np.uint8)
+            layer_rgb = layer_arr[..., :3].astype(np.int16)
+            color_delta = np.abs(layer_rgb - bg_arr).sum(axis=2)
+            painted = np.where((alpha > 0) & (color_delta > 8), 255, 0).astype(np.uint8)
+            layer_mask = np.maximum(layer_mask, painted)
 
         # Fallback mask extraction from visual differences between composite and background.
-        bg_arr = np.array(background, dtype=np.int16)
         comp_arr = np.array(composite, dtype=np.int16)
         diff = np.abs(comp_arr - bg_arr).sum(axis=2)
-        diff_mask = (diff > 12).astype(np.uint8) * 255
+        diff_mask = (diff > 24).astype(np.uint8) * 255
 
-        merged = np.maximum(layer_mask, diff_mask).astype(np.uint8)
+        layer_coverage = float((layer_mask > 0).mean())
+        diff_coverage = float((diff_mask > 0).mean())
+
+        # If diff-based mask explodes to near-full-canvas while layer data is sane,
+        # trust the layer-derived mask to avoid all-white artifacts.
+        if layer_coverage > 0.0 and diff_coverage > 0.98 and layer_coverage < 0.95:
+            merged = layer_mask
+        else:
+            merged = np.maximum(layer_mask, diff_mask).astype(np.uint8)
         binary_mask = Image.fromarray(merged, mode="L").point(lambda p: 255 if p > 10 else 0)
 
         return background, binary_mask
@@ -143,6 +156,20 @@ def create_interface(config_path: str = "configs/default.yaml") -> gr.Blocks:
             if invert_mask:
                 mask_arr = 255 - mask_arr
             mask_image = Image.fromarray(mask_arr, mode="L")
+
+            white_ratio = float((mask_arr == 255).mean())
+            if white_ratio > 0.995:
+                return (
+                    None,
+                    mask_image,
+                    None,
+                    (
+                        "Error: Extracted mask is almost fully white. "
+                        "This usually means mask extraction failed. Try repainting, "
+                        "increasing Mask Extract Threshold, and keep Invert Mask off."
+                    ),
+                    [],
+                )
 
             # Ensure mask contains editable region.
             if np.array(mask_image).max() == 0:
