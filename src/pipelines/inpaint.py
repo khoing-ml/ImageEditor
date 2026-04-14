@@ -3,8 +3,9 @@
 import logging
 from typing import List, Optional
 from PIL import Image
+import torch
 
-from diffusers import StableDiffusionInpaintPipeline
+from diffusers import AutoPipelineForInpainting
 from src.pipelines.base import BasePipeline
 
 logger = logging.getLogger(__name__)
@@ -13,14 +14,30 @@ logger = logging.getLogger(__name__)
 class InpaintPipeline(BasePipeline):
     """Inpainting pipeline for masked region replacement."""
 
+    @staticmethod
+    def _resolve_torch_dtype(device: str) -> torch.dtype:
+        """Choose a sensible dtype for the selected device."""
+        return torch.float16 if device.startswith("cuda") else torch.float32
+
     def load_model(self) -> None:
         """Load the inpainting model."""
         logger.info(f"Loading Inpaint model: {self.model_id}")
-        self.pipeline = StableDiffusionInpaintPipeline.from_pretrained(
-            self.model_id, torch_dtype="auto"
-        )
-        self.pipeline.to(self.device)
-        logger.info("Inpaint model loaded successfully")
+        torch_dtype = self._resolve_torch_dtype(self.device)
+        try:
+            # AutoPipeline supports SD 1.x/2.x and SDXL inpainting repositories.
+            self.pipeline = AutoPipelineForInpainting.from_pretrained(
+                self.model_id,
+                torch_dtype=torch_dtype,
+            )
+            self.pipeline.to(self.device)
+            logger.info("Inpaint model loaded successfully")
+        except Exception as exc:
+            raise RuntimeError(
+                f"Failed to load inpaint model '{self.model_id}'. "
+                "If using SDXL, set inpaint_model_id to "
+                "'diffusers/stable-diffusion-xl-1.0-inpainting-0.1' or use "
+                "'runwayml/stable-diffusion-inpainting'."
+            ) from exc
 
     def generate(
         self,
@@ -57,8 +74,6 @@ class InpaintPipeline(BasePipeline):
 
         generator = None
         if seed is not None:
-            import torch
-
             generator = torch.Generator(device=self.device).manual_seed(seed)
 
         result = self.pipeline(

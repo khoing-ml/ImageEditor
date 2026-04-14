@@ -16,7 +16,6 @@ from src.services.image_loader import ImageLoader
 from src.services.mask_processor import MaskProcessor
 from src.services.prompt_builder import PromptBuilder
 from src.services.metadata_logger import MetadataLogger
-from src.services.sam_segmentation import SAMSegmentation
 
 logger = logging.getLogger(__name__)
 
@@ -58,8 +57,8 @@ class GenerationService:
     def get_inpaint_pipeline(self) -> InpaintPipeline:
         """Get or create inpainting pipeline."""
         if "inpaint" not in self.pipelines:
-            model_id = self.config.get(
-                "inpaint_model_id", "runwayml/stable-diffusion-inpainting"
+            model_id = self.config.get("inpaint_model_id") or self.config.get(
+                "model_id", "runwayml/stable-diffusion-inpainting"
             )
             self.pipelines["inpaint"] = InpaintPipeline(model_id, self.device)
             self.pipelines["inpaint"].load_model()

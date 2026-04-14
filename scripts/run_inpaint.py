@@ -77,7 +77,7 @@ def main():
         help="Optional path to save prepared mask preview",
     )
     parser.add_argument(
-        "--config", type=str, default="configs/default.yaml", help="Config file path"
+        "--config", type=str, default="configs/inpaint.yaml", help="Config file path"
     )
 
     args = parser.parse_args()

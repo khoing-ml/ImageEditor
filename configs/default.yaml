@@ -5,7 +5,7 @@ device: cuda
 # Model IDs - now using SDXL as default
 text2img_model_id: stabilityai/stable-diffusion-xl-base-1.0
 img2img_model_id: stabilityai/stable-diffusion-xl-img2img-1.0
-inpaint_model_id: stabilityai/stable-diffusion-xl-1.0
+inpaint_model_id: diffusers/stable-diffusion-xl-1.0-inpainting-0.1
 controlnet_depth_model_id: stabilityai/stable-diffusion-xl-base-1.0
 controlnet_model_id: lllyasviel/control_v11f1p_sd15_depth
 
