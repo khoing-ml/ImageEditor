@@ -69,10 +69,11 @@ def create_interface(config_path: str = "configs/default.yaml") -> gr.Blocks:
         composite = composite.convert("RGB")
         bg_arr = np.array(background, dtype=np.int16)
 
-        # Primary mask extraction from drawing layers. Some Gradio versions emit
-        # layers with opaque alpha across the canvas, so combine alpha with RGB
-        # differences to isolate actual painted regions.
+        # Primary mask extraction from drawing layers.
+        # Some Gradio versions emit layers with opaque alpha across the canvas,
+        # so we combine multiple signals to isolate real brush strokes.
         layer_mask = np.zeros((background.height, background.width), dtype=np.uint8)
+        white_brush_mask = np.zeros((background.height, background.width), dtype=np.uint8)
         for layer in layers:
             if layer is None:
                 continue
@@ -85,17 +86,34 @@ def create_interface(config_path: str = "configs/default.yaml") -> gr.Blocks:
             painted = np.where((alpha > 0) & (color_delta > 8), 255, 0).astype(np.uint8)
             layer_mask = np.maximum(layer_mask, painted)
 
+            # Brush color is constrained to white in this UI, so explicit white
+            # detection is a robust signal even when alpha is noisy.
+            white_pixels = (
+                (layer_arr[..., 0] >= 240)
+                & (layer_arr[..., 1] >= 240)
+                & (layer_arr[..., 2] >= 240)
+            )
+            painted_white = np.where((alpha > 0) & white_pixels, 255, 0).astype(np.uint8)
+            white_brush_mask = np.maximum(white_brush_mask, painted_white)
+
         # Fallback mask extraction from visual differences between composite and background.
         comp_arr = np.array(composite, dtype=np.int16)
         diff = np.abs(comp_arr - bg_arr).sum(axis=2)
         diff_mask = (diff > 24).astype(np.uint8) * 255
 
+        white_coverage = float((white_brush_mask > 0).mean())
         layer_coverage = float((layer_mask > 0).mean())
         diff_coverage = float((diff_mask > 0).mean())
 
+        # Prefer explicit white brush signal when available.
+        if 0.0 < white_coverage < 0.99:
+            merged = white_brush_mask
+            # Add layer-derived pixels only when they are not near full-canvas noise.
+            if 0.0 < layer_coverage < 0.95:
+                merged = np.maximum(merged, layer_mask)
         # If diff-based mask explodes to near-full-canvas while layer data is sane,
-        # trust the layer-derived mask to avoid all-white artifacts.
-        if layer_coverage > 0.0 and diff_coverage > 0.98 and layer_coverage < 0.95:
+        # trust layer-derived mask to avoid all-white artifacts.
+        elif layer_coverage > 0.0 and diff_coverage > 0.98 and layer_coverage < 0.95:
             merged = layer_mask
         else:
             merged = np.maximum(layer_mask, diff_mask).astype(np.uint8)
@@ -159,16 +177,9 @@ def create_interface(config_path: str = "configs/default.yaml") -> gr.Blocks:
 
             white_ratio = float((mask_arr == 255).mean())
             if white_ratio > 0.995:
-                return (
-                    None,
-                    mask_image,
-                    None,
-                    (
-                        "Error: Extracted mask is almost fully white. "
-                        "This usually means mask extraction failed. Try repainting, "
-                        "increasing Mask Extract Threshold, and keep Invert Mask off."
-                    ),
-                    [],
+                logger.warning(
+                    "Extracted mask is almost fully white (ratio=%.4f). Continuing with best-effort mask.",
+                    white_ratio,
                 )
 
             # Ensure mask contains editable region.
@@ -230,6 +241,11 @@ def create_interface(config_path: str = "configs/default.yaml") -> gr.Blocks:
                 download_paths.append(str(out_path))
 
             status = f"Inpainting successful! Saved artifacts to {run_output_dir}"
+            if white_ratio > 0.995:
+                status += (
+                    " | Warning: mask was almost fully white; extraction may be unstable. "
+                    "Try increasing Mask Extract Threshold if results look off."
+                )
             return images, mask_image, prepared_mask_preview, status, download_paths
         except Exception as e:
             logger.error(f"Inpainting failed: {e}")
